@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discogs Album Info</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        input, textarea {
+            width: 80%;
+            max-width: 600px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #results {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .album-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 10px 0;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+        }
+        .album-card img {
+            border-radius: 4px;
+            width: 80px; /* Set a fixed width for consistency */
+            height: auto;
+            margin-right: 10px;
+        }
+        .album-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .album-info h3 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .album-info p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Discogs Album Info</h1>
+    <form id="albumForm">
+        <textarea id="links" placeholder="Enter Discogs links, one per line"></textarea>
+        <input type="text" id="shelfLabel" placeholder="Shelf Label (e.g. A1, B2)" required />
+        <button type="submit">Fetch Album Info</button>
+    </form>
+    <div id="results"></div>
+
+    <script>
+        const albumForm = document.getElementById('albumForm');
+        const resultsDiv = document.getElementById('results');
+
+        albumForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            resultsDiv.innerHTML = '';  // Clear previous results
+            const links = document.getElementById('links').value.trim().split('\n').filter(link => link);
+            const shelfLabel = document.getElementById('shelfLabel').value.trim();
+
+            const response = await fetch('/get_album_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ links, shelf_label: shelfLabel })
+            });
+
+            const albums = await response.json();
+            albums.forEach(album => {
+                if (!album.error) {
+                    const albumCard = document.createElement('div');
+                    albumCard.className = 'album-card';
+                    albumCard.innerHTML = `
+                        <img src="${album.cover_image}" alt="Cover Art">
+                        <div class="album-info">
+                            <h3>${album.title} - ${album.artist}</h3>
+                            <p>Genre: ${album.genre}</p>
+                            <p>Style: ${album.style}</p>
+                        </div>
+                    `;
+                    resultsDiv.appendChild(albumCard);
+                } else {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'album-card';
+                    errorDiv.innerHTML = `<p>${album.error}</p>`;
+                    resultsDiv.appendChild(errorDiv);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
